@@ -30,7 +30,7 @@
     "netlify-cli": "^15.9.1",
     "prettier": "3.0.0",
     "typescript": "5.2.2",
-    "undici": "5.22.1",
+    "undici": "5.26.2",
     "uvu": "0.5.6",
     "vite": "4.4.7",
     "vite-tsconfig-paths": "4.2.0"
