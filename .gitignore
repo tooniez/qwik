@@ -7,13 +7,18 @@
 etc
 temp
 .history
+.lh
 *.
 **/*.log
 *.node
 
 # Application
 qwik-app/
-**/server/
+/server/
+/starters/**/server/
+/packages/*/server/
+!/packages/qwik/server/
+/packages/*/src/styled-system/
 todo-express/
 target
 !/packages/docs/src/routes/demo/events/target
@@ -29,11 +34,13 @@ dist-dev
 external
 lib
 tsdoc-metadata.json
+packages/qwik/bindings
 
 # IDE and local environment
-.vscode/settings.json
 .idea
 .eslintcache
+test-results
+.direnv
 
 # Package Managers
 .yarn/*
@@ -42,3 +49,7 @@ tsdoc-metadata.json
 
 # Local Netlify folder
 .netlify
+sandbox
+
+# We need to ignore this because "changesets" will try to replace it
+/CHANGELOG.md

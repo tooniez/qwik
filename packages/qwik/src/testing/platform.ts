@@ -26,10 +26,16 @@ function createPlatform() {
       const importPath = toPath(urlDoc);
       const mod = moduleCache.get(importPath);
       if (mod) {
+        if (!mod || !(symbolName in mod)) {
+          throw new Error(`Q-ERROR: missing symbol '${symbolName}' in module '${url}'.`);
+        }
         return mod[symbolName];
       }
       return import(importPath).then((mod) => {
         moduleCache.set(importPath, mod);
+        if (!mod || !(symbolName in mod)) {
+          throw new Error(`Q-ERROR: missing symbol '${symbolName}' in module '${url}'.`);
+        }
         return mod[symbolName];
       });
     },
@@ -86,12 +92,14 @@ export function setTestPlatform(_setPlatform: Function) {
  * Convert relative base URI and relative URL into a fully qualified URL.
  *
  * @param base -`QRL`s are relative, and therefore they need a base for resolution.
- *    - `Element` use `base.ownerDocument.baseURI`
- *    - `Document` use `base.baseURI`
- *    - `string` use `base` as is
- *    - `QConfig` use `base.baseURI`
- * @param url - relative URL
- * @returns fully qualified URL.
+ *
+ *   - `Element` use `base.ownerDocument.baseURI`
+ *   - `Document` use `base.baseURI`
+ *   - `string` use `base` as is
+ *   - `QConfig` use `base.baseURI`
+ *
+ * @param url - Relative URL
+ * @returns Fully qualified URL.
  */
 export function toUrl(doc: Document, containerEl: Element, url: string | URL): URL {
   const base = new URL(containerEl?.getAttribute('q:base') ?? doc.baseURI, doc.baseURI);
@@ -116,9 +124,7 @@ function toPath(url: URL) {
 
 const testPlatform = createPlatform();
 
-/**
- * @public
- */
+/** @public */
 export function getTestPlatform(): TestPlatform {
   return testPlatform;
 }

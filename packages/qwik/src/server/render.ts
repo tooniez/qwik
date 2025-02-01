@@ -1,7 +1,14 @@
-import { createTimer, getBuildBase } from './utils';
-import { _renderSSR, Fragment, jsx, _pauseFromContexts, type JSXNode } from '@builder.io/qwik';
 import type { SnapshotResult } from '@builder.io/qwik';
+import { _pauseFromContexts, _renderSSR, Fragment, jsx, type JSXNode } from '@builder.io/qwik';
+import { isDev } from '@builder.io/qwik';
+import type { QContext } from '../core/state/context';
+import { QInstance } from '../core/util/markers';
+import { getValidManifest } from '../optimizer/src/manifest';
+import type { ResolvedManifest, SymbolMapper } from '../optimizer/src/types';
 import { getSymbolHash, setServerPlatform } from './platform';
+import { applyPrefetchImplementation } from './prefetch-implementation';
+import { getPrefetchResources } from './prefetch-strategy';
+import { getQwikLoaderScript } from './scripts';
 import type {
   QwikManifest,
   RenderToStreamOptions,
@@ -10,22 +17,15 @@ import type {
   RenderToStringResult,
   StreamWriter,
 } from './types';
-import { isDev } from '@builder.io/qwik/build';
-import { getQwikLoaderScript } from './scripts';
-import { getPrefetchResources } from './prefetch-strategy';
-import type { ResolvedManifest, SymbolMapper } from '../optimizer/src/types';
-import { getValidManifest } from '../optimizer/src/manifest';
-import { applyPrefetchImplementation } from './prefetch-implementation';
-import type { QContext } from '../core/state/context';
+import { createTimer, getBuildBase } from './utils';
 
 const DOCTYPE = '<!DOCTYPE html>';
 
 /**
- * Creates a server-side `document`, renders to root node to the document,
- * then serializes the document to a string.
+ * Creates a server-side `document`, renders to root node to the document, then serializes the
+ * document to a string.
  *
  * @public
- *
  */
 export async function renderToStream(
   rootNode: any,
@@ -117,6 +117,15 @@ export async function renderToStream(
         include: 'never',
       };
     }
+    if (!opts.qwikPrefetchServiceWorker) {
+      opts.qwikPrefetchServiceWorker = {};
+    }
+    if (!opts.qwikPrefetchServiceWorker.include) {
+      opts.qwikPrefetchServiceWorker.include = false;
+    }
+    if (!opts.qwikPrefetchServiceWorker.position) {
+      opts.qwikPrefetchServiceWorker.position = 'top';
+    }
   }
 
   if (!opts.manifest) {
@@ -129,7 +138,27 @@ export async function renderToStream(
   const injections = resolvedManifest?.manifest.injections;
   const beforeContent = injections
     ? injections.map((injection) => jsx(injection.tag, injection.attributes ?? {}))
-    : undefined;
+    : [];
+
+  const includeMode = opts.qwikLoader?.include ?? 'auto';
+  const positionMode = opts.qwikLoader?.position ?? 'bottom';
+  if (positionMode === 'top' && includeMode !== 'never') {
+    const qwikLoaderScript = getQwikLoaderScript({
+      debug: opts.debug,
+    });
+    beforeContent.push(
+      jsx('script', {
+        id: 'qwikloader',
+        dangerouslySetInnerHTML: qwikLoaderScript,
+      })
+    );
+    // Assume there will be at least click handlers
+    beforeContent.push(
+      jsx('script', {
+        dangerouslySetInnerHTML: `window.qwikevents.push('click')`,
+      })
+    );
+  }
 
   const renderTimer = createTimer();
   const renderSymbols: string[] = [];
@@ -153,8 +182,10 @@ export async function renderToStream(
       if (opts.prefetchStrategy !== null) {
         // skip prefetch implementation if prefetchStrategy === null
         const prefetchResources = getPrefetchResources(snapshotResult, opts, resolvedManifest);
+        const base = containerAttributes['q:base']!;
         if (prefetchResources.length > 0) {
           const prefetchImpl = applyPrefetchImplementation(
+            base,
             opts.prefetchStrategy,
             prefetchResources,
             opts.serverData?.nonce
@@ -173,21 +204,20 @@ export async function renderToStream(
         })
       );
       if (snapshotResult.funcs.length > 0) {
+        const hash = containerAttributes[QInstance];
         children.push(
           jsx('script', {
             'q:func': 'qwik/json',
-            dangerouslySetInnerHTML: serializeFunctions(snapshotResult.funcs),
+            dangerouslySetInnerHTML: serializeFunctions(hash, snapshotResult.funcs),
             nonce: opts.serverData?.nonce,
           })
         );
       }
 
       const needLoader = !snapshotResult || snapshotResult.mode !== 'static';
-      const includeMode = opts.qwikLoader?.include ?? 'auto';
       const includeLoader = includeMode === 'always' || (includeMode === 'auto' && needLoader);
       if (includeLoader) {
         const qwikLoaderScript = getQwikLoaderScript({
-          events: opts.qwikLoader?.events,
           debug: opts.debug,
         });
         children.push(
@@ -199,12 +229,12 @@ export async function renderToStream(
         );
       }
 
+      // We emit the events separately so other qwikloaders can see them
       const extraListeners = Array.from(containerState.$events$, (s) => JSON.stringify(s));
       if (extraListeners.length > 0) {
-        let content = `window.qwikevents.push(${extraListeners.join(', ')})`;
-        if (!includeLoader) {
-          content = `window.qwikevents||=[];${content}`;
-        }
+        const content =
+          (includeLoader ? `window.qwikevents` : `(window.qwikevents||=[])`) +
+          `.push(${extraListeners.join(', ')})`;
         children.push(
           jsx('script', {
             dangerouslySetInnerHTML: content,
@@ -213,11 +243,11 @@ export async function renderToStream(
         );
       }
 
-      collectRenderSymbols(renderSymbols, contexts);
+      collectRenderSymbols(renderSymbols, contexts as QContext[]);
       snapshotTime = snapshotTimer();
       return jsx(Fragment, { children });
     },
-    manifestHash: resolvedManifest?.manifest.manifestHash || 'dev',
+    manifestHash: resolvedManifest?.manifest.manifestHash || 'dev' + hash(),
   });
 
   // End of container
@@ -246,12 +276,15 @@ export async function renderToStream(
   return result;
 }
 
+function hash() {
+  return Math.random().toString(36).slice(2);
+}
+
 /**
- * Creates a server-side `document`, renders to root node to the document,
- * then serializes the document to a string.
+ * Creates a server-side `document`, renders to root node to the document, then serializes the
+ * document to a string.
  *
  * @public
- *
  */
 export async function renderToString(
   rootNode: any,
@@ -286,9 +319,7 @@ export async function renderToString(
   };
 }
 
-/**
- * @public
- */
+/** @public */
 export function resolveManifest(
   manifest: QwikManifest | ResolvedManifest | undefined
 ): ResolvedManifest | undefined {
@@ -301,8 +332,8 @@ export function resolveManifest(
   manifest = getValidManifest(manifest);
   if (manifest) {
     const mapper: SymbolMapper = {};
-    Object.entries(manifest.mapping).forEach(([key, value]) => {
-      mapper[getSymbolHash(key)] = [key, value];
+    Object.entries(manifest.mapping).forEach(([symbol, bundleFilename]) => {
+      mapper[getSymbolHash(symbol)] = [symbol, bundleFilename];
     });
     return {
       mapper,
@@ -313,7 +344,7 @@ export function resolveManifest(
 }
 
 const escapeText = (str: string) => {
-  return str.replace(/<(\/?script)/g, '\\x3C$1');
+  return str.replace(/<(\/?script)/gi, '\\x3C$1');
 };
 
 function collectRenderSymbols(renderSymbols: string[], elements: QContext[]) {
@@ -326,6 +357,8 @@ function collectRenderSymbols(renderSymbols: string[], elements: QContext[]) {
   }
 }
 
-function serializeFunctions(funcs: string[]) {
-  return `document.currentScript.qFuncs=[${funcs.join(',\n')}]`;
+export const Q_FUNCS_PREFIX = 'document["qFuncs_HASH"]=';
+
+function serializeFunctions(hash: string, funcs: string[]) {
+  return Q_FUNCS_PREFIX.replace('HASH', hash) + `[${funcs.join(',\n')}]`;
 }

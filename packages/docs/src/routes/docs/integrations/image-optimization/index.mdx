@@ -3,14 +3,26 @@ title: Image Optimization | Integrations
 keywords: >-
   third party image optimization, image optimization, image optimization tools,
   image optimization services, image optimization service, image optimization
-  tool, image optimization api, im
+  tool, image optimization api, image optimization software
 contributors:
   - mhevery
   - gioboa
   - fabiobiondi
+  - adamdbradley
+  - igorbabko
+  - Benny-Nottonson
+  - mrhoodz
+  - avanderpluijm
+  - fabian-hiller
+  - manucorporat
+  - aendel
+  - maiieul
+updated_at: '2024-10-03T18:53:23Z'
+created_at: '2023-04-19T22:13:46Z'
 ---
-import CodeSandbox from '../../../../components/code-sandbox/index.tsx';
 
+import CodeSandbox from '../../../../components/code-sandbox/index.tsx';
+import PackageManagerTabs from '~/components/package-manager-tabs/index.tsx';
 
 # Image Optimization
 
@@ -30,7 +42,7 @@ This is a built-in feature that relies on the [`vite-imagetools`](https://www.np
 * Import any image from the `src` folder
 * The image is converted in several webp images, one for each breakpoint (200px, 400px, 600px, 800px, 1200px)
 * The image is processed and optimized to reduce its size
-* An `<img>` element is rendered, using the `srcset` attribute to sets the image source for several resolutions
+* An `<img>` element is rendered, using the `srcset` attribute to set the image source for several resolutions
 * Now the browser will load the most suitable image for the resolution in use
 
 #### Key Points
@@ -51,11 +63,13 @@ The community and the Qwik team love this API for a number of reasons:
 
 #### Usage
 
-Add the `?jsx` suffix at the end of the import
+Add the `?jsx` suffix **at the end** of the import
 
 ```tsx
-import Image from '[IMAGE_PATH]?jsx';
+import Image from '[IMAGE_PATH]?w=24&h=24&jsx';
 ```
+
+> ⚠️ Make sure to put the `jsx` query parameter at the end of the import path, otherwise typescript might complain.
 
 Use the image in the template as a component:
 
@@ -130,7 +144,7 @@ but in that case you need to manually specify the `height` as well to avoid it b
 
 Below you can see a simple trick to avoid having to manually set the `height`, while also maintaining the aspect ratio:
 
-> **TIP:** you should always specify `width` and `height` values to prevents layout reflow
+> **TIP:** you should always specify `width` and `height` values to prevent layout reflow
 
 
 ```tsx
@@ -160,12 +174,12 @@ export default component$(() => {
   height: auto; /* Let the browser calculate the height to maintain aspect ratio */
   display: block; /* Remove any extra white space below the image */
 }
-````
+```
 
 ## `@unpic/qwik`
 
 - Site with detailed instructions on usage: [@unpic/qwik](https://unpic.pics/img/qwik/)
-- Installation: `npm install @unpic/qwik`
+- Installation: add `@unpic/qwik` dependency
 
 Unpic is a third-party image optimization library that works with existing image optimization CDNs. It provides an `Image` component that can be used to optimize images.
 
@@ -203,15 +217,31 @@ export default component$(() => {
 
 ## `qwik-image`
 
-Performant images with automatic optimisation.
+Performant images with automatic optimization.
 
-```bash
-npm install qwik-image
-or
-yarn install qwik-image
-or
+
+<PackageManagerTabs>
+<span q:slot="pnpm">
+```shell
 pnpm install qwik-image
 ```
+</span>
+<span q:slot="npm">
+```shell
+npm install qwik-image
+```
+</span>
+<span q:slot="yarn">
+```shell
+yarn add qwik-image
+```
+</span>
+<span q:slot="bun">
+```shell
+bun install qwik-image
+```
+</span>
+</PackageManagerTabs>
 
 > This is a pluggable component so devs could connect different image loaders to it (like builder.io or other CDNs)
 

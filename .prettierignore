@@ -19,13 +19,17 @@ target
 output
 rollup.config.js
 build
+!packages/qwik/src/build
 .cache
 .rollup.cache
 tsconfig.tsbuildinfo
 packages/docs/api/**/*
+packages/docs/public/repl/repl-sw.js*
 packages/docs/src/routes/**/*.mdx
 **/server/**/*.js
 starters/**/*.js
+# explicit exclusion for tailwind prettier.config.js
+starters/features/tailwind/*
 packages/docs/server
 packages/docs/src/routes/api
 packages/docs/**/*.md
@@ -35,6 +39,7 @@ packages/insights/.netlify
 packages/insights/scripts
 packages/insights/**/*.gen.d.ts
 packages/qwik-labs/lib-types
+packages/qwik-labs/vite
 
 # TODO: Figure out why this doesn't pass in CI
 packages/qwik/src/core/props/props.ts

@@ -7,11 +7,13 @@ import {
   zod$,
 } from "@builder.io/qwik-city";
 import type {
+  CommonLoaderActionOptions,
   JSONObject,
   RequestEventAction,
-} from "packages/qwik-city/runtime/src/types";
+  ValidatorErrorType,
+} from "packages/qwik-city/src/runtime/src/types";
 
-type TypedDataValidatorError = z.typeToFlattenedError<{
+type TypedDataValidatorError = ValidatorErrorType<{
   category: "bird" | "dog" | "rat";
 }>;
 
@@ -65,13 +67,13 @@ export const useLoader = routeLoader$(() => {
 
 export const useAction1 = routeAction$(actionQrl, {
   validation: [typedDataValidator, dataValidator],
-});
+} as CommonLoaderActionOptions);
 export const useAction2 = routeAction$(actionQrl, {
   validation: [typedDataValidator],
-});
+} as CommonLoaderActionOptions);
 export const useAction3 = routeAction$(actionQrl, {
   validation: [dataValidator],
-});
+} as CommonLoaderActionOptions);
 export const useAction4 = routeAction$(
   actionQrl,
   typedDataValidator,

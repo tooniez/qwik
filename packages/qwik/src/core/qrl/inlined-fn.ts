@@ -2,15 +2,13 @@ import { assertDefined } from '../error/assert';
 import { SignalDerived } from '../state/signal';
 import { qSerialize } from '../util/qdev';
 
-/**
- * @internal
- */
-export const _fnSignal = <T extends (...args: any[]) => any>(
+/** @internal */
+export const _fnSignal = <T extends (...args: any) => any>(
   fn: T,
-  args: any[],
+  args: Parameters<T>,
   fnStr?: string
 ) => {
-  return new SignalDerived(fn, args, fnStr);
+  return new SignalDerived<ReturnType<T>, Parameters<T>>(fn, args, fnStr);
 };
 
 export const serializeDerivedSignalFunc = (signal: SignalDerived) => {

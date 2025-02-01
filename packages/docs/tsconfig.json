@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "incremental": true,
+    "target": "ES2020",
+    "module": "ES2020",
+    "lib": ["es2021", "DOM", "webworker", "DOM.Iterable"],
+    "resolveJsonModule": true,
+    "jsx": "react-jsx",
+    "allowArbitraryExtensions": true,
+    "jsxImportSource": "@builder.io/qwik",
+    "noEmit": true,
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "moduleResolution": "Bundler",
+    "baseUrl": ".",
+    "assumeChangesOnlyAffectDirectDependencies": true,
+    "noUnusedLocals": true,
+    "paths": {
+      "~/*": ["src/*"],
+      "@examples-data": ["src/routes/examples/apps/examples-data.ts"],
+      "@playground-data": ["src/routes/playground/playground-data.ts"],
+      "@tutorial-data": ["src/routes/tutorial/tutorial-data.ts"]
+    },
+    "types": ["node", "vite/client", "@builder.io/qwik"],
+    "esModuleInterop": true,
+    "sourceRoot": ".",
+    "inlineSourceMap": true,
+    "inlineSources": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  }
+}

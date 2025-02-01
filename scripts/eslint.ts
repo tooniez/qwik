@@ -1,4 +1,4 @@
-import { type BuildConfig, copyFile, run, nodeTarget } from './util';
+import { type BuildConfig, run, nodeTarget } from './util';
 import { join } from 'node:path';
 import { build } from 'esbuild';
 import { readPackageJson, writePackageJson } from './package-json';
@@ -19,8 +19,6 @@ export async function buildEslint(config: BuildConfig) {
     minify: !config.dev,
     external: ['eslint', 'espree', '@typescript-eslint/utils', 'typescript'],
   });
-  await copyFile(join(eslintDir, 'package.json'), join(eslintOutput, 'package.json'));
-  await copyFile(join(eslintDir, 'README.md'), join(eslintOutput, 'README.md'));
 
   console.log(`📐 ${PACKAGE}`);
 }
@@ -31,12 +29,13 @@ export async function publishEslint(
   version: string,
   isDryRun: boolean
 ) {
-  const distDir = join(config.packagesDir, PACKAGE, 'dist');
+  const distDir = join(config.packagesDir, PACKAGE);
   const cliPkg = await readPackageJson(distDir);
 
   // update the cli version
   console.log(`   update version = "${version}"`);
   cliPkg.version = version;
+  cliPkg.main = 'index.js';
   await writePackageJson(distDir, cliPkg);
 
   console.log(`⛴ publishing ${cliPkg.name} ${version}`, isDryRun ? '(dry-run)' : '');

@@ -3,8 +3,8 @@
  *
  * It's the entry point for Firbease when building for production.
  *
- * Learn more about the Netlify integration here:
- * - https://qwik.builder.io/docs/deployments/firebase/
+ * Learn more about the Firebase integration here:
+ * - https://qwik.dev/docs/deployments/firebase/
  *
  */
 import {

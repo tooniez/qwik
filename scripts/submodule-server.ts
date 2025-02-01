@@ -7,8 +7,8 @@ import { readPackageJson } from './package-json';
 /**
  * Builds @builder.io/server
  *
- * This is submodule for helping to generate server-side rendered pages,
- * along with providing utilities for prerendering and unit testing.
+ * This is submodule for helping to generate server-side rendered pages, along with providing
+ * utilities for prerendering and unit testing.
  */
 export async function submoduleServer(config: BuildConfig) {
   const submodule = 'server';
@@ -22,6 +22,7 @@ export async function submoduleServer(config: BuildConfig) {
     outdir: config.distQwikPkgDir,
     sourcemap: config.dev,
     bundle: true,
+    platform: 'node',
     target,
     external: [
       /* no Node.js built-in externals allowed! */ '@builder.io/qwik-dom',
@@ -61,7 +62,6 @@ export async function submoduleServer(config: BuildConfig) {
     },
     outExtension: { '.js': '.cjs' },
     plugins: [importPath(/^@builder\.io\/qwik$/, '@builder.io/qwik'), qwikDomPlugin],
-    platform: 'node',
     target: nodeTarget,
     define: {
       ...(await inlineQwikScriptsEsBuild(config)),

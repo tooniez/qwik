@@ -8,15 +8,15 @@
     "priority": 19,
     "displayName": "Adapter: Node.js Server",
     "docs": [
-      "https://qwik.builder.io/deployments/node/"
+      "https://qwik.dev/deployments/node/"
     ],
     "nextSteps": {
       "title": "Next Steps",
       "lines": [
-        " Now you can build a production-ready node app:",
+        "Now you can build a production-ready node app:",
         "",
-        "  - pnpm run build: production build",
-        "  - pnpm run serve: runs the production server locally"
+        "- pnpm run build: production build",
+        "- pnpm run serve: runs the production server locally"
       ]
     }
   }

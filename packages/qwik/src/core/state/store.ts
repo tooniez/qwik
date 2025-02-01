@@ -27,9 +27,7 @@ import { logError, logWarn } from '../util/log';
 
 export type QObject<T extends {}> = T & { __brand__: 'QObject' };
 
-/**
- * Creates a proxy that notifies of any writes.
- */
+/** Creates a proxy that notifies of any writes. */
 export const getOrCreateProxy = <T extends object>(
   target: T,
   containerState: ContainerState,
@@ -76,9 +74,7 @@ export const setObjectFlags = (obj: object, flags: number) => {
 
 export type TargetType = Record<string | symbol, any>;
 
-/**
- * @internal
- */
+/** @internal */
 export const _restProps = (props: Record<string, any>, omit: string[]) => {
   const rest: Record<string, any> = {};
   for (const key in props) {
@@ -196,15 +192,23 @@ export class ReadWriteProxyHandler implements ProxyHandler<TargetType> {
     return true;
   }
 
-  has(target: TargetType, property: string | symbol): boolean {
-    if (property === QOjectTargetSymbol) {
+  has(target: TargetType, prop: string | symbol): boolean {
+    if (prop === QOjectTargetSymbol) {
       return true;
+    }
+    const invokeCtx = tryGetInvokeContext();
+    if (typeof prop === 'string' && invokeCtx) {
+      const subscriber = invokeCtx.$subscriber$;
+      if (subscriber) {
+        const isA = isArray(target);
+        this.$manager$.$addSub$(subscriber, isA ? undefined : prop);
+      }
     }
     const hasOwnProperty = Object.prototype.hasOwnProperty;
-    if (hasOwnProperty.call(target, property)) {
+    if (hasOwnProperty.call(target, prop)) {
       return true;
     }
-    if (typeof property === 'string' && hasOwnProperty.call(target, _IMMUTABLE_PREFIX + property)) {
+    if (typeof prop === 'string' && hasOwnProperty.call(target, _IMMUTABLE_PREFIX + prop)) {
       return true;
     }
     return false;
@@ -233,14 +237,20 @@ export class ReadWriteProxyHandler implements ProxyHandler<TargetType> {
         : a;
     });
   }
-
   getOwnPropertyDescriptor(
     target: TargetType,
     prop: string | symbol
   ): PropertyDescriptor | undefined {
+    const descriptor = Reflect.getOwnPropertyDescriptor(target, prop);
+
     if (isArray(target) || typeof prop === 'symbol') {
-      return Object.getOwnPropertyDescriptor(target, prop);
+      return descriptor;
     }
+
+    if (descriptor && !descriptor.configurable) {
+      return descriptor;
+    }
+
     return {
       enumerable: true,
       configurable: true,

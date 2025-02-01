@@ -1,4 +1,4 @@
-import type { QPrefetchData } from '../../../qwik-city/runtime/src/service-worker/types';
+import type { QPrefetchData } from '../../../qwik-city/src/runtime/src/service-worker/types';
 import type { PrefetchResource } from './types';
 
 export function workerFetchScript() {
@@ -19,11 +19,14 @@ export function workerFetchScript() {
   return s;
 }
 
-export function prefetchUrlsEventScript(prefetchResources: PrefetchResource[]) {
+export function prefetchUrlsEventScript(base: string, prefetchResources: PrefetchResource[]) {
   const data: QPrefetchData = {
     bundles: flattenPrefetchResources(prefetchResources).map((u) => u.split('/').pop()!),
   };
-  return `document.dispatchEvent(new CustomEvent("qprefetch",{detail:${JSON.stringify(data)}}))`;
+  const args = JSON.stringify(['prefetch', base, ...data.bundles!]);
+
+  return `document.dispatchEvent(new CustomEvent("qprefetch",{detail:${JSON.stringify(data)}}));
+          (window.qwikPrefetchSW||(window.qwikPrefetchSW=[])).push(${args});`;
 }
 
 export function flattenPrefetchResources(prefetchResources: PrefetchResource[]) {

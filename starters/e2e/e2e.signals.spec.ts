@@ -27,8 +27,6 @@ test.describe("signals", () => {
       const stuff = page.locator("#stuff");
       const body = page.locator("body");
 
-      await page.waitForTimeout(100);
-
       await expect(parentRender).toHaveText("Parent renders: 1");
       await expect(childRender).toHaveText("Child renders: 1");
       await expect(text).toHaveText("Text: Message");
@@ -209,7 +207,6 @@ test.describe("signals", () => {
     test("issue 2245-b", async ({ page }) => {
       const btn = page.locator("#issue-2245-b-btn");
       const results = page.locator(".issue-2245-b-results p");
-      await page.waitForTimeout(200);
       await expect(results).toHaveCSS("color", "rgb(0, 0, 0)");
 
       await btn.click();
@@ -248,7 +245,6 @@ test.describe("signals", () => {
       ]);
 
       await btn.click();
-      await page.waitForTimeout(200);
 
       await expect(results).toHaveText([
         "This text should not change",
@@ -283,7 +279,6 @@ test.describe("signals", () => {
       ]);
       await page.waitForTimeout(100);
       await input.fill("test");
-      await page.waitForTimeout(200);
       await expect(results).toHaveText([
         '{"controls":{"ctrl":{"value":"test"}}}',
         '{"ctrl":{"value":"test"}}',
@@ -464,8 +459,6 @@ test.describe("signals", () => {
       const resultC = page.locator("#issue-4228-result-c");
       const resultTotal = page.locator("#issue-4228-result-total");
 
-      await page.waitForTimeout(100);
-
       await expect(resultA).toHaveText("0:0");
       await expect(resultB).toHaveText("0:0");
       await expect(resultC).toHaveText("0:0");
@@ -561,6 +554,17 @@ test.describe("signals", () => {
       await expect(usecomputed).toHaveText(
         `Card useComputed$: https://placehold.co/400x400?text=1&useComputed$`,
       );
+    });
+
+    test("createSignal/createComputed$", async ({ page }) => {
+      const button = page.locator("#many-signals-button");
+      const result = page.locator("#many-signals-result");
+      const doubles = page.locator("#many-doubles-result");
+      await expect(result).toHaveText("0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ");
+      await expect(doubles).toHaveText("0, 0, 0, 0, 0, 0, 0, 0, 0, 0, ");
+      await button.click();
+      await expect(result).toHaveText("1, 1, 1, 1, 1, 1, 1, 1, 1, 1, ");
+      await expect(doubles).toHaveText("2, 2, 2, 2, 2, 2, 2, 2, 2, 2, ");
     });
   }
 

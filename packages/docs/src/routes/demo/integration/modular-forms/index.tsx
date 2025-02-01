@@ -1,22 +1,25 @@
 // @ts-nocheck
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { $, component$ } from '@builder.io/qwik';
-import { routeLoader$, z } from '@builder.io/qwik-city';
+import { $, component$, type QRL } from '@builder.io/qwik';
+import { routeLoader$ } from '@builder.io/qwik-city';
 import type { InitialValues, SubmitHandler } from '@modular-forms/qwik';
-import { formAction$, useForm, zodForm$ } from '@modular-forms/qwik';
+import { formAction$, useForm, valiForm$ } from '@modular-forms/qwik';
+import * as v from 'valibot';
 
-const loginSchema = z.object({
-  email: z
-    .string()
-    .min(1, 'Please enter your email.')
-    .email('The email address is badly formatted.'),
-  password: z
-    .string()
-    .min(1, 'Please enter your password.')
-    .min(8, 'You password must have 8 characters or more.'),
+const LoginSchema = v.object({
+  email: v.pipe(
+    v.string(),
+    v.nonEmpty('Please enter your email.'),
+    v.email('The email address is badly formatted.')
+  ),
+  password: v.pipe(
+    v.string(),
+    v.nonEmpty('Please enter your password.'),
+    v.minLength(8, 'Your password must have 8 characters or more.')
+  ),
 });
 
-type LoginForm = z.infer<typeof loginSchema>;
+type LoginForm = v.InferInput<typeof LoginSchema>;
 
 export const useFormLoader = routeLoader$<InitialValues<LoginForm>>(() => ({
   email: '',
@@ -25,16 +28,16 @@ export const useFormLoader = routeLoader$<InitialValues<LoginForm>>(() => ({
 
 export const useFormAction = formAction$<LoginForm>((values) => {
   // Runs on server
-}, zodForm$(loginSchema));
+}, valiForm$(LoginSchema));
 
 export default component$(() => {
   const [loginForm, { Form, Field }] = useForm<LoginForm>({
     loader: useFormLoader(),
     action: useFormAction(),
-    validate: zodForm$(loginSchema),
+    validate: valiForm$(LoginSchema),
   });
 
-  const handleSubmit: SubmitHandler<LoginForm> = $((values, event) => {
+  const handleSubmit: QRL<SubmitHandler<LoginForm>> = $((values, event) => {
     // Runs on client
     console.log(values);
   });

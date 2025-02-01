@@ -5,8 +5,9 @@ import { runAddCommand } from './add/run-add-command';
 import { runNewCommand } from './new/run-new-command';
 import { runJokeCommand } from './joke/run-joke-command';
 import { note, panic, pmRunCmd, printHeader, bye } from './utils/utils';
-import { runBuildCommand } from './build/run-build-command';
+import { runBuildCommand } from './utils/run-build-command';
 import { intro, isCancel, select, confirm } from '@clack/prompts';
+import { runV2Migration } from './migrate-v2/run-migration';
 
 const SPACE_TO_HINT = 18;
 const COMMANDS = [
@@ -46,6 +47,13 @@ const COMMANDS = [
     showInHelp: true,
   },
   {
+    value: 'migrate-v2',
+    label: 'migrate-v2',
+    hint: 'Rescopes the application from @builder.io/* namespace to @qwik.dev/*',
+    run: (app: AppCommand) => runV2Migration(app),
+    showInHelp: false,
+  },
+  {
     value: 'help',
     label: 'help',
     hint: 'Show this help',
@@ -62,7 +70,6 @@ const COMMANDS = [
 ];
 
 export async function runCli() {
-  console.clear();
   printHeader();
 
   try {
@@ -97,6 +104,10 @@ async function runCommand(app: AppCommand) {
     }
     case 'joke': {
       await runJokeCommand();
+      return;
+    }
+    case 'migrate-v2': {
+      await runV2Migration(app);
       return;
     }
     case 'version': {
@@ -151,8 +162,8 @@ async function printHelp(app: AppCommand) {
   if (isCancel(command)) {
     bye();
   }
-
-  await runCommand(Object.assign(app, { task: command as string }));
+  const args = (command as string).split(' ');
+  await runCommand(Object.assign(app, { task: args[0], args }));
 }
 
 function printVersion() {

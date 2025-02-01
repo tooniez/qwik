@@ -1,6 +1,6 @@
 {
   "name": "qwik-library-name",
-  "description": "Create a reusable Qwik component library",
+  "description": "Create a Qwik library",
   "version": "0.0.1",
   "private": false,
   "main": "./lib/index.qwik.mjs",
@@ -38,20 +38,20 @@
     "@types/node": "latest",
     "@typescript-eslint/eslint-plugin": "latest",
     "@typescript-eslint/parser": "latest",
-    "eslint-plugin-qwik": "latest",
     "eslint": "latest",
-    "undici": "latest",
-    "np": "7.6.1",
+    "eslint-plugin-qwik": "latest",
+    "np": "^8.0.4",
     "prettier": "latest",
     "typescript": "latest",
-    "vite": "latest",
-    "vite-tsconfig-paths": "4.2.0"
+    "undici": "latest",
+    "vite": "^4.5.2",
+    "vite-tsconfig-paths": "^4.2.1"
   },
   "__qwik__": {
-    "displayName": "Component library",
+    "displayName": "Library (Qwik)",
     "priority": -1,
     "docs": [
-      "https://qwik.builder.io/docs/getting-started/"
+      "https://qwik.dev/docs/getting-started/"
     ]
   }
 }
