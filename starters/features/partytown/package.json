@@ -24,7 +24,7 @@
     },
     "docs": [
       "https://partytown.builder.io/",
-      "https://qwik.builder.io/integrations/integration/partytown/"
+      "https://qwik.dev/integrations/partytown/"
     ],
     "nextSteps": {
       "lines": [
@@ -36,6 +36,6 @@
     }
   },
   "devDependencies": {
-    "@builder.io/partytown": "^0.8.0"
+    "@builder.io/partytown": "^0.8.1"
   }
 }

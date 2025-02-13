@@ -7,42 +7,46 @@ export type {
   DiagnosticCategory,
   EntryStrategy,
   GlobalInjections,
-  HookAnalysis,
-  HookEntryStrategy,
+  SegmentAnalysis as HookAnalysis,
+  SegmentAnalysis,
+  SegmentEntryStrategy as HookEntryStrategy,
+  SegmentEntryStrategy,
+  InlineEntryStrategy,
+  InsightManifest,
   MinifyMode,
   Optimizer,
   OptimizerOptions,
   OptimizerSystem,
-  QwikManifest,
-  QwikBundle,
-  QwikSymbol,
-  SystemEnvironment,
   Path,
+  QwikBundle,
+  QwikManifest,
+  QwikSymbol,
+  ResolvedManifest,
   SingleEntryStrategy,
   SmartEntryStrategy,
-  SourceMapsOption,
   SourceLocation,
+  SourceMapsOption,
+  SymbolMapper,
+  SymbolMapperFn,
+  SystemEnvironment,
   TransformFsOptions,
   TransformModule,
   TransformModuleInput,
   TransformModulesOptions,
-  TranspileOption,
-  TransformOutput,
-  SymbolMapper,
-  SymbolMapperFn,
-  InlineEntryStrategy,
   TransformOptions,
-  ResolvedManifest,
+  TransformOutput,
+  TranspileOption,
 } from './types';
 
+export type { QwikBuildMode, QwikBuildTarget, ExperimentalFeatures } from './plugins/plugin';
 export type { QwikRollupPluginOptions } from './plugins/rollup';
 export type {
-  QwikVitePluginOptions,
-  QwikVitePluginApi,
-  QwikVitePlugin,
   QwikViteDevResponse,
+  QwikVitePlugin,
+  QwikVitePluginApi,
+  QwikVitePluginOptions,
 } from './plugins/vite';
-export type { QwikBuildMode, QwikBuildTarget } from './plugins/plugin';
 
 export { qwikRollup } from './plugins/rollup';
 export { qwikVite } from './plugins/vite';
+export { symbolMapper } from './plugins/vite-dev-server';

@@ -5,6 +5,7 @@ test.describe("render", () => {
     await page.goto("/e2e/render");
     page.on("pageerror", (err) => expect(err).toEqual(undefined));
     page.on("console", (msg) => {
+      // console.warn(msg.type(), msg.text());
       if (msg.type() === "error") {
         expect(msg.text()).toEqual(undefined);
       }
@@ -61,7 +62,6 @@ test.describe("render", () => {
       const result = page.locator("#issue-1475-result");
 
       await button.click();
-      await page.waitForTimeout(100);
       await expect(result).toHaveText(
         "1. Before\n2. Some text\nMiddle\n3 After\n\nStuff",
         {
@@ -146,10 +146,8 @@ test.describe("render", () => {
       await input.fill("some text");
       await expect(input).toHaveValue("some text");
       await toggle.click();
-      await page.waitForTimeout(100);
       await expect(input).toHaveValue("some text");
       await toggle.click();
-      await page.waitForTimeout(100);
       await expect(input).toHaveValue("some text");
     });
 
@@ -297,18 +295,18 @@ test.describe("render", () => {
       await expect(result1).toHaveText("Hello 0");
       await expect(result2).toHaveText("Hello 0");
       await expect(result1).toHaveCSS("color", "rgb(0, 0, 255)");
-      await expect(result2).toHaveCSS("color", "rgb(0, 0, 255)");
+      await expect(result2).toHaveCSS("color", "rgb(255, 0, 0)");
       await increment.click();
       await expect(result1).toHaveText("Hello 1");
       await expect(result2).toHaveText("Hello 1");
       await expect(result1).toHaveCSS("color", "rgb(0, 0, 255)");
-      await expect(result2).toHaveCSS("color", "rgb(0, 0, 255)");
+      await expect(result2).toHaveCSS("color", "rgb(255, 0, 0)");
 
       await increment.click();
       await expect(result1).toHaveText("Hello 2");
       await expect(result2).toHaveText("Hello 2");
       await expect(result1).toHaveCSS("color", "rgb(0, 0, 255)");
-      await expect(result2).toHaveCSS("color", "rgb(0, 0, 255)");
+      await expect(result2).toHaveCSS("color", "rgb(255, 0, 0)");
     });
 
     test("issue3468", async ({ page }) => {
@@ -492,6 +490,16 @@ test.describe("render", () => {
       await expect(input1).toHaveValue("0.5");
       await expect(input2).toHaveValue("0.5");
     });
+
+    test("issue 5266", async ({ page }) => {
+      const tag = page.locator("#issue-5266-tag");
+      const button = page.locator("#issue-5266-button");
+      await page.locator("#issue-5266-render").click();
+
+      await expect(tag).toHaveAttribute("data-v", "foo");
+      await button.click();
+      await expect(tag).toHaveAttribute("data-v", "bar");
+    });
   }
 
   tests();
@@ -499,8 +507,11 @@ test.describe("render", () => {
   test.describe("client rerender", () => {
     test.beforeEach(async ({ page }) => {
       const toggleRender = page.locator("#rerender");
+      const v = await toggleRender.getAttribute("data-v");
       await toggleRender.click();
-      await page.waitForTimeout(100);
+      await expect(page.locator("#rerenderCount")).toHaveText(
+        `Render ${Number(v) + 1}`,
+      );
     });
     tests();
   });
@@ -518,5 +529,10 @@ test.describe("render", () => {
     await expect(result).toHaveText("Hello");
     await toggle.click();
     await expect(result).toHaveText("world");
+  });
+
+  test("dynamic DOM tags", async ({ page }) => {
+    const button = page.locator("#dynamic-button");
+    await expect(button).toHaveClass("btn");
   });
 });

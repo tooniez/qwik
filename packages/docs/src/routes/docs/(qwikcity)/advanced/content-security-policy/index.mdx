@@ -1,8 +1,14 @@
 ---
 title: Content Security Policy | Advanced
+description: Learn how to create a content security policy (CSP) to keep your Qwik app safe.
 contributors:
   - tzdesign
   - jordanw66
+  - mrhoodz
+  - the-zimmermann
+  - hamatoyogi
+updated_at: '2023-06-25T19:43:33Z'
+created_at: '2023-06-15T11:45:23Z'
 ---
 
 # Content Security Policy
@@ -12,6 +18,8 @@ contributors:
 [Content Security Policy (CSP)](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP) is an added layer of security that helps to detect and mitigate certain types of attacks, including Cross-Site Scripting (XSS) and data injection attacks. These attacks are used for everything from data theft, to site defacement, to malware distribution.
 
 ## Steps to integrate
+
+These steps only work for SSR approach. If you are using the Server Side Generation approach, you don't have an up and running server, so this code will not run during the page request.
 
 ### Add a route plugin
 
@@ -40,7 +48,7 @@ src/
 
 ```typescript title="src/routes/plugin@csp.ts"
 import type { RequestHandler } from "@builder.io/qwik-city";
-import { isDev } from "@builder.io/qwik/build";
+import { isDev } from "@builder.io/qwik";
 
 export const onRequest: RequestHandler = event => {
   if (isDev) return; // Will not return CSP headers in dev mode
@@ -71,6 +79,7 @@ import {
   ServiceWorkerRegister,
 } from "@builder.io/qwik-city";
 import { RouterHead } from "./components/router-head/router-head";
+import { isDev } from "@builder.io/qwik";
 
 import "./global.css";
 
@@ -80,12 +89,13 @@ export default component$(() => {
     <QwikCityProvider>
       <head>
         <meta charSet="utf-8" />
-        <link rel="manifest" href="/manifest.json" />
+        {!isDev && <link rel="manifest" href={`${import.meta.env.BASE_URL}manifest.json`} />}
+
         <RouterHead />
       </head>
       <body lang="en">
         <RouterOutlet />
-        <ServiceWorkerRegister nonce={nonce} />
+        {!isDev && <ServiceWorkerRegister nonce={nonce} />}
       </body>
     </QwikCityProvider>
   );

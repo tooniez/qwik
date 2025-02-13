@@ -12,7 +12,7 @@ import {
   TaskFlagsIsTask,
   isSubscriberDescriptor,
 } from '../../use/use-task';
-import { then } from '../../util/promises';
+import { maybeThen } from '../../util/promises';
 import type { ValueOrPromise } from '../../util/types';
 import { useLexicalScope } from '../../use/use-lexical-scope.public';
 import { renderComponent } from './render-dom';
@@ -46,16 +46,15 @@ export const notifyChange = (subAction: Subscriptions, containerState: Container
 /**
  * Mark component for rendering.
  *
- * Use `notifyRender` method to mark a component for rendering at some later point in time.
- * This method uses `getPlatform(doc).queueRender` for scheduling of the rendering. The
- * default implementation of the method is to use `requestAnimationFrame` to do actual rendering.
+ * Use `notifyRender` method to mark a component for rendering at some later point in time. This
+ * method uses `getPlatform(doc).queueRender` for scheduling of the rendering. The default
+ * implementation of the method is to use `requestAnimationFrame` to do actual rendering.
  *
  * The method is intended to coalesce multiple calls into `notifyRender` into a single call for
  * rendering.
  *
  * @param hostElement - Host-element of the component to re-render.
  * @returns A promise which is resolved when the component has been rendered.
- *
  */
 const notifyRender = (hostElement: QwikElement, containerState: ContainerState): void => {
   const server = isServerPlatform();
@@ -116,11 +115,10 @@ const scheduleFrame = (containerState: ContainerState): Promise<void> => {
 };
 
 /**
- * Low-level API used by the Optimizer to process `useTask$()` API. This method
- * is not intended to be used by developers.
+ * Low-level API used by the Optimizer to process `useTask$()` API. This method is not intended to
+ * be used by developers.
  *
  * @internal
- *
  */
 export const _hW = () => {
   const [task] = useLexicalScope<[SubscriberEffect]>();
@@ -178,7 +176,7 @@ const renderMarked = async (containerState: ContainerState): Promise<void> => {
     }
 
     signalOperations.forEach((op) => {
-      executeSignalOperation(staticCtx, op);
+      executeSignalOperation(rCtx, op);
     });
 
     // Add post operations
@@ -245,20 +243,20 @@ export const postRendering = async (containerState: ContainerState, rCtx: Render
   }
 };
 
+const isTask = (task: SubscriberEffect) => (task.$flags$ & TaskFlagsIsTask) !== 0;
+const isResourceTask = (task: SubscriberEffect) => (task.$flags$ & TaskFlagsIsResource) !== 0;
 const executeTasksBefore = async (containerState: ContainerState, rCtx: RenderContext) => {
   const containerEl = containerState.$containerEl$;
   const resourcesPromises: ValueOrPromise<SubscriberEffect>[] = [];
   const taskPromises: ValueOrPromise<SubscriberEffect>[] = [];
-  const isTask = (task: SubscriberEffect) => (task.$flags$ & TaskFlagsIsTask) !== 0;
-  const isResourceTask = (task: SubscriberEffect) => (task.$flags$ & TaskFlagsIsResource) !== 0;
 
   containerState.$taskNext$.forEach((task) => {
     if (isTask(task)) {
-      taskPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), () => task));
+      taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
       containerState.$taskNext$.delete(task);
     }
     if (isResourceTask(task)) {
-      resourcesPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), () => task));
+      resourcesPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
       containerState.$taskNext$.delete(task);
     }
   });
@@ -266,9 +264,9 @@ const executeTasksBefore = async (containerState: ContainerState, rCtx: RenderCo
     // Run staging effected
     containerState.$taskStaging$.forEach((task) => {
       if (isTask(task)) {
-        taskPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), () => task));
+        taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
       } else if (isResourceTask(task)) {
-        resourcesPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), () => task));
+        resourcesPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
       } else {
         containerState.$taskNext$.add(task);
       }
@@ -292,8 +290,58 @@ const executeTasksBefore = async (containerState: ContainerState, rCtx: RenderCo
   if (resourcesPromises.length > 0) {
     const resources = await Promise.all(resourcesPromises);
     sortTasks(resources);
-    resources.forEach((task) => runSubscriber(task, containerState, rCtx));
+    // no await so these run concurrently with the rendering
+    for (const task of resources) {
+      runSubscriber(task, containerState, rCtx);
+    }
   }
+};
+
+/** Execute tasks that are dirty during SSR render */
+export const executeSSRTasks = (containerState: ContainerState, rCtx: RenderContext) => {
+  const containerEl = containerState.$containerEl$;
+  const staging = containerState.$taskStaging$;
+  if (!staging.size) {
+    return;
+  }
+  const taskPromises: ValueOrPromise<SubscriberEffect>[] = [];
+
+  let tries = 20;
+  const runTasks = () => {
+    // SSR dirty tasks are in taskStaging
+    staging.forEach((task) => {
+      if (isTask(task)) {
+        taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
+      }
+      // We ignore other types of tasks, they are handled via waitOn
+    });
+
+    staging.clear();
+
+    // Wait for all promises
+    if (taskPromises.length > 0) {
+      return Promise.all(taskPromises).then(async (tasks): Promise<unknown> => {
+        sortTasks(tasks);
+        await Promise.all(
+          tasks.map((task) => {
+            return runSubscriber(task, containerState, rCtx);
+          })
+        );
+        taskPromises.length = 0;
+        if (--tries && staging.size > 0) {
+          return runTasks();
+        }
+        if (!tries) {
+          logWarn(
+            `Infinite task loop detected. Tasks:\n${Array.from(staging)
+              .map((task) => `  ${task.$qrl$.$symbol$}`)
+              .join('\n')}`
+          );
+        }
+      });
+    }
+  };
+  return runTasks();
 };
 
 const executeTasksAfter = async (
@@ -307,7 +355,7 @@ const executeTasksAfter = async (
   containerState.$taskNext$.forEach((task) => {
     if (taskPred(task, false)) {
       if (task.$el$.isConnected) {
-        taskPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), () => task));
+        taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
       }
       containerState.$taskNext$.delete(task);
     }
@@ -317,7 +365,7 @@ const executeTasksAfter = async (
     containerState.$taskStaging$.forEach((task) => {
       if (task.$el$.isConnected) {
         if (taskPred(task, true)) {
-          taskPromises.push(then(task.$qrl$.$resolveLazy$(containerEl), () => task));
+          taskPromises.push(maybeThen(task.$qrl$.$resolveLazy$(containerEl), () => task));
         } else {
           containerState.$taskNext$.add(task);
         }
@@ -344,8 +392,9 @@ const sortNodes = (elements: QContext[]) => {
 };
 
 const sortTasks = (tasks: SubscriberEffect[]) => {
+  const isServer = isServerPlatform();
   tasks.sort((a, b) => {
-    if (a.$el$ === b.$el$) {
+    if (isServer || a.$el$ === b.$el$) {
       return a.$index$ < b.$index$ ? -1 : 1;
     }
     return (a.$el$.compareDocumentPosition(getRootNode(b.$el$)) & 2) !== 0 ? 1 : -1;

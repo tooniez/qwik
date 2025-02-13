@@ -9,8 +9,8 @@ export const isPromise = (value: any): value is Promise<any> => {
 
 export const safeCall = <T, B, C>(
   call: () => ValueOrPromise<T>,
-  thenFn: (arg: Awaited<T>) => ValueOrPromise<B>,
-  rejectFn: (reason: any) => ValueOrPromise<C>
+  thenFn: { f(arg: Awaited<T>): ValueOrPromise<B> }['f'],
+  rejectFn: { f(reason: any): ValueOrPromise<C> }['f']
 ): ValueOrPromise<B | C> => {
   try {
     const promise = call();
@@ -24,7 +24,7 @@ export const safeCall = <T, B, C>(
   }
 };
 
-export const then = <T, B>(
+export const maybeThen = <T, B>(
   promise: ValueOrPromise<T>,
   thenFn: (arg: Awaited<T>) => ValueOrPromise<B>
 ): ValueOrPromise<B> => {

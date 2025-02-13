@@ -22,6 +22,7 @@ export const applicationTable = sqliteTable(
     id: integer('id').primaryKey(),
     name: text('name').notNull(),
     description: text('description'),
+    url: text('url'),
     publicApiKey: text('public_api_key').notNull(),
   },
   (applications) => ({
@@ -38,7 +39,6 @@ export const symbolTable = sqliteTable('symbols', {
   pathname: text('pathname').notNull(),
   interaction: integer('interaction').notNull(),
   symbol: text('symbol').notNull(),
-  sessionID: text('session_id').notNull(),
   previousSymbol: text('prev_symbol'),
   timeDelta: integer('time_delta_ms').notNull(),
   loadDelay: integer('load_delay_ms').notNull(),
@@ -53,7 +53,6 @@ export const errorTable = sqliteTable('errors', {
   publicApiKey: text('public_api_key').references(() => applicationTable.publicApiKey),
   manifestHash: text('manifest_hash').references(() => manifestTable.hash),
   timestamp: integer('timestamp', { mode: 'timestamp_ms' }).notNull(),
-  sessionID: text('session_id').notNull(),
   url: text('url').notNull(),
   source: text('source').notNull(),
   line: integer('line').notNull(),
@@ -74,7 +73,14 @@ export const manifestTable = sqliteTable(
     timestamp: integer('timestamp', { mode: 'timestamp_ms' }).notNull(),
   },
   (table) => ({
-    publicApiKeyIndex: uniqueIndex('hashIndex').on(table.hash, table.publicApiKey),
+    publicApiKeyHashIndex: index('idx_manifests_apiKey_hash').on(table.hash, table.publicApiKey),
+    publicApiKeyHashIndex_2: index('idx_manifests_apiKey_hash_2').on(
+      table.publicApiKey,
+      table.hash
+    ),
+    apiTimestamp: index('idx_manifest_api_timestamp').on(table.publicApiKey, table.timestamp),
+    publicApiKeyIndex: index('idx_manifests_public_apiKey').on(table.publicApiKey),
+    hashIndex: index('idx_manifests_hash').on(table.hash),
   })
 );
 
@@ -92,18 +98,20 @@ export const symbolDetailTable = sqliteTable(
     lo: integer('lo').notNull(),
     hi: integer('hi').notNull(),
   },
-  (symbolDetailTable) => {
-    return {
-      publicApiKeyReference: foreignKey(() => ({
-        columns: [symbolDetailTable.publicApiKey],
-        foreignColumns: [applicationTable.publicApiKey],
-      })),
-      manifestHashReference: foreignKey(() => ({
-        columns: [symbolDetailTable.publicApiKey, symbolDetailTable.manifestHash],
-        foreignColumns: [manifestTable.publicApiKey, manifestTable.hash],
-      })),
-    };
-  }
+  (symbolDetailTable) => ({
+    apiKeyManifestHashIndex: uniqueIndex('idx_symbolDetail_apiKey_manifestHash').on(
+      symbolDetailTable.publicApiKey,
+      symbolDetailTable.manifestHash
+    ),
+    publicApiKeyReference: foreignKey({
+      columns: [symbolDetailTable.publicApiKey],
+      foreignColumns: [applicationTable.publicApiKey],
+    }),
+    manifestHashReference: foreignKey({
+      columns: [symbolDetailTable.publicApiKey, symbolDetailTable.manifestHash],
+      foreignColumns: [manifestTable.publicApiKey, manifestTable.hash],
+    }),
+  })
 );
 
 export type SymbolDetailRow = InferSelectModel<typeof symbolDetailTable>;
@@ -221,16 +229,24 @@ export const edgeTable = sqliteTable(
   },
   (table) => ({
     publicApiKyIndex: index('edgeIndex_PublicApiKey').on(table.publicApiKey),
-    publicApiKyManifestHashIndex: index('edgeIndex_PublicApiKey_manifestHash').on(
+    publicApiKeyIndex: index('idx_edge_publicApiKey_manifestHash').on(table.publicApiKey),
+    publicApiKeyManifestHashIndex: index('idx_edge_publicApiKey_manifestHash').on(
       table.publicApiKey,
       table.manifestHash
     ),
-    edgeIndex: uniqueIndex('edgeIndex').on(
+    edgeIndex: index('idx_edge_apiKey_manifestHash_from_to').on(
       table.publicApiKey,
       table.manifestHash,
       table.from,
       table.to
     ),
+    idx_edge_from_to: index('idx_edge_from_to').on(table.from, table.to),
+    idx_apiKey_hash_from: index('idx_apiKey_hash_from').on(
+      table.publicApiKey,
+      table.from,
+      table.manifestHash
+    ),
+    idx_hash_to: index('idx_hash_to').on(table.manifestHash, table.to),
   })
 );
 
@@ -303,8 +319,36 @@ export const routesTable = sqliteTable(
       table.route,
       table.symbol
     ),
+    publicApiKeyAndManifestHashIndex: index('idx_routes_publicApiKey_manifestHash').on(
+      table.publicApiKey,
+      table.manifestHash
+    ),
   })
 );
 
 export type RouteRow = InferSelectModel<typeof routesTable>;
 export type RouteRowSansId = InferInsertModel<typeof routesTable>;
+
+export const usersTable = sqliteTable(
+  'users',
+  {
+    id: integer('user_id').primaryKey(),
+    email: text('email').notNull(),
+    created: integer('created', { mode: 'timestamp_ms' }).notNull(),
+    superUser: integer('super_user', { mode: 'boolean' }).notNull(),
+  },
+  (table) => ({
+    emailIndex: uniqueIndex('emailIndex').on(table.email),
+  })
+);
+
+export const userApplicationMap = sqliteTable(
+  'userApplicationMap',
+  {
+    applicationId: integer('application_id').references(() => applicationTable.id),
+    userId: integer('user_id').references(() => usersTable.id),
+  },
+  (table) => ({
+    userApplicationIndex: uniqueIndex('userApplicationIndex').on(table.applicationId, table.userId),
+  })
+);

@@ -8,6 +8,7 @@ import {
 import type { PrefetchImplementation, PrefetchResource, PrefetchStrategy } from './types';
 
 export function applyPrefetchImplementation(
+  base: string,
   prefetchStrategy: PrefetchStrategy | undefined,
   prefetchResources: PrefetchResource[],
   nonce?: string
@@ -19,7 +20,7 @@ export function applyPrefetchImplementation(
   const prefetchNodes: JSXNode[] = [];
 
   if (prefetchImpl.prefetchEvent === 'always') {
-    prefetchUrlsEvent(prefetchNodes, prefetchResources, nonce);
+    prefetchUrlsEvent(base, prefetchNodes, prefetchResources, nonce);
   }
 
   if (prefetchImpl.linkInsert === 'html-append') {
@@ -40,6 +41,7 @@ export function applyPrefetchImplementation(
 }
 
 function prefetchUrlsEvent(
+  base: string,
   prefetchNodes: JSXNode[],
   prefetchResources: PrefetchResource[],
   nonce?: string
@@ -56,16 +58,16 @@ function prefetchUrlsEvent(
   }
   prefetchNodes.push(
     jsx('script', {
-      dangerouslySetInnerHTML: prefetchUrlsEventScript(prefetchResources),
+      'q:type': 'prefetch-bundles',
+      dangerouslySetInnerHTML:
+        prefetchUrlsEventScript(base, prefetchResources) +
+        `document.dispatchEvent(new CustomEvent('qprefetch', {detail:{links: [location.pathname]}}))`,
       nonce,
     })
   );
 }
 
-/**
- * Creates the `<link>` within the rendered html.
- * Optionally add the JS worker fetch
- */
+/** Creates the `<link>` within the rendered html. Optionally add the JS worker fetch */
 function linkHtmlImplementation(
   prefetchNodes: JSXNode[],
   prefetchResources: PrefetchResource[],
@@ -73,11 +75,15 @@ function linkHtmlImplementation(
 ) {
   const urls = flattenPrefetchResources(prefetchResources);
   const rel = prefetchImpl.linkRel || 'prefetch';
+  const priority = prefetchImpl.linkFetchPriority;
 
   for (const url of urls) {
     const attributes: Record<string, string> = {};
     attributes['href'] = url;
     attributes['rel'] = rel;
+    if (priority) {
+      attributes['fetchpriority'] = priority;
+    }
     if (rel === 'prefetch' || rel === 'preload') {
       if (url.endsWith('.js')) {
         attributes['as'] = 'script';
@@ -89,9 +95,8 @@ function linkHtmlImplementation(
 }
 
 /**
- * Uses JS to add the `<link>` elements at runtime, and if the
- * link prefetching isn't supported, it'll also add the
- * web worker fetch.
+ * Uses JS to add the `<link>` elements at runtime, and if the link prefetching isn't supported,
+ * it'll also add the web worker fetch.
  */
 function linkJsImplementation(
   prefetchNodes: JSXNode[],
@@ -100,6 +105,7 @@ function linkJsImplementation(
   nonce?: string
 ) {
   const rel = prefetchImpl.linkRel || 'prefetch';
+  const priority = prefetchImpl.linkFetchPriority;
   let s = ``;
 
   if (prefetchImpl.workerFetchInsert === 'no-link-support') {
@@ -112,6 +118,9 @@ function linkJsImplementation(
   s += `const l=document.createElement('link');`;
   s += `l.setAttribute("href",u);`;
   s += `l.setAttribute("rel","${rel}");`;
+  if (priority) {
+    s += `l.setAttribute("fetchpriority","${priority}");`;
+  }
 
   if (prefetchImpl.workerFetchInsert === 'no-link-support') {
     s += `if(i===0){`;
@@ -138,6 +147,7 @@ function linkJsImplementation(
   prefetchNodes.push(
     jsx('script', {
       type: 'module',
+      'q:type': 'link-js',
       dangerouslySetInnerHTML: s,
       nonce,
     })
@@ -155,6 +165,7 @@ function workerFetchImplementation(
   prefetchNodes.push(
     jsx('script', {
       type: 'module',
+      'q:type': 'prefetch-worker',
       dangerouslySetInnerHTML: s,
       nonce,
     })
@@ -164,18 +175,13 @@ function workerFetchImplementation(
 function normalizePrefetchImplementation(
   input: PrefetchImplementation | undefined
 ): Required<PrefetchImplementation> {
-  if (input && typeof input === 'object') {
-    // user provided PrefetchImplementation
-    return input as any;
-  }
-
-  // default PrefetchImplementation
-  return PrefetchImplementationDefault;
+  return { ...PrefetchImplementationDefault, ...input };
 }
 
 const PrefetchImplementationDefault: Required<PrefetchImplementation> = {
   linkInsert: null,
   linkRel: null,
+  linkFetchPriority: null,
   workerFetchInsert: null,
   prefetchEvent: 'always',
 };

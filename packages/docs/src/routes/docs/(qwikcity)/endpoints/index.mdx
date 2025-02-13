@@ -1,11 +1,22 @@
 ---
-title: Endpoints | QwikCity
+title: Endpoints | Qwik City
+description: Endpoints are middleware functions used to control and return data in various formats like RESTful API, GraphQL API, JSON, XML, reverse proxy, or other API types.
 contributors:
   - adamdbradley
   - manucorporat
   - mhevery
   - CoralWombat
   - hamatoyogi
+  - igorbabko
+  - mrhoodz
+  - EamonHeffernan
+  - kumarasinghe
+  - electather
+  - wtlin1228
+  - PatrickJS
+  - the-r3aper7
+updated_at: '2023-10-03T18:53:23Z'
+created_at: '2023-03-20T23:45:13Z'
 ---
 
 import CodeSandbox from '../../../../components/code-sandbox/index.tsx';
@@ -38,7 +49,7 @@ export const onGet: RequestHandler = async ({ json }) => {
 
 ## Create a reverse proxy using a fetch
 
-A reverse proxy can be created by using the `fetch()` method to make a request to another server, and then using the `send()` method to send the response back to the client.
+A reverse proxy can be created by using the `fetch()` method to request another server. Then use the `send()` method to send the response back to the client.
 
 <CodeSandbox src="/src/routes/demo/qwikcity/middleware/proxy/index.tsx">
 ```tsx
@@ -84,5 +95,5 @@ const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 Endpoints are low level APIs that give developers full control over the HTTP response. They are only recommended when you need to create an API to be consumed by an external entity such as a mobile app or a third-party service.
 
-The [`server$`](/docs/(qwikcity)/server$/index.mdx) functions are usually a better option when you need to run some code on the server and return a response back to the app. The `server$` are strongly typed and provides a more convenient API for returning data.
+The [`server$`](/docs/(qwikcity)/server$/index.mdx) functions are usually a better option when you need to run some code on the server and return a response back to the app. The `server$` is strongly typed and provides a more convenient API for returning data.
 

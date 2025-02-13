@@ -16,25 +16,28 @@ import { QObjectManagerSymbol, _IMMUTABLE, _IMMUTABLE_PREFIX } from './constants
 import { _fnSignal } from '../qrl/inlined-fn';
 
 /**
+ * A signal is a reactive value which can be read and written. When the signal is written, all tasks
+ * which are tracking the signal will be re-run and all components that read the signal will be
+ * re-rendered.
+ *
+ * Furthermore, when a signal value is passed as a prop to a component, the optimizer will
+ * automatically forward the signal. This means that `return <div title={signal.value}>hi</div>`
+ * will update the `title` attribute when the signal changes without having to re-render the
+ * component.
+ *
  * @public
  */
 export interface Signal<T = any> {
   value: T;
 }
 
-/**
- * @public
- */
-export type ReadonlySignal<T = any> = Readonly<Signal<T>>;
+/** @public */
+export type ReadonlySignal<T = unknown> = Readonly<Signal<T>>;
 
-/**
- * @public
- */
+/** @public */
 export type ValueOrSignal<T> = T | Signal<T>;
 
-/**
- * @internal
- */
+/** @internal */
 export const _createSignal = <T>(
   value: T,
   containerState: ContainerState,
@@ -134,16 +137,16 @@ export class SignalImpl<T> extends SignalBase implements Signal<T> {
   }
 }
 
-export class SignalDerived<T = any, ARGS extends any[] = any[]> extends SignalBase {
+export class SignalDerived<RETURN = unknown, ARGS extends any[] = unknown[]> extends SignalBase {
   constructor(
-    public $func$: (...args: ARGS) => T,
+    public $func$: (...args: ARGS) => RETURN,
     public $args$: ARGS,
     public $funcStr$?: string
   ) {
     super();
   }
 
-  get value(): T {
+  get value(): RETURN {
     return this.$func$.apply(undefined, this.$args$);
   }
 }
@@ -169,13 +172,18 @@ export class SignalWrapper<T extends Record<string, any>, P extends keyof T> ext
   }
 }
 
-export const isSignal = (obj: any): obj is Signal<any> => {
+/**
+ * Checks if a given object is a `Signal`.
+ *
+ * @param obj - The object to check if `Signal`.
+ * @returns Boolean - True if the object is a `Signal`.
+ * @public
+ */
+export const isSignal = <T = unknown>(obj: any): obj is Signal<T> => {
   return obj instanceof SignalBase;
 };
 
-/**
- * @internal
- */
+/** @internal */
 export const _wrapProp = <T extends Record<any, any>, P extends keyof T>(obj: T, prop: P): any => {
   if (!isObject(obj)) {
     return obj[prop];
@@ -202,9 +210,7 @@ export const _wrapProp = <T extends Record<any, any>, P extends keyof T>(obj: T,
   return _IMMUTABLE;
 };
 
-/**
- * @internal
- */
+/** @internal */
 export const _wrapSignal = <T extends Record<any, any>, P extends keyof T>(
   obj: T,
   prop: P

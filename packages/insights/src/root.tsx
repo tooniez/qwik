@@ -1,20 +1,13 @@
 import './global.css';
-
+import { component$ } from '@builder.io/qwik';
 import { QwikCityProvider, RouterOutlet, ServiceWorkerRegister } from '@builder.io/qwik-city';
-import { UserContext, initialUserData, type UserData } from './context/user';
-import { component$, useContextProvider, useStore } from '@builder.io/qwik';
-
 import { Insights } from '@builder.io/qwik-labs';
 import { RouterHead } from './components/router-head/router-head';
-
 export default component$(() => {
-  const userStore = useStore<UserData>(initialUserData);
-  useContextProvider(UserContext, userStore);
-
   return (
     <QwikCityProvider>
       <head>
-        <meta charSet="utf-8" />
+        <meta charset="utf-8" />
         <link rel="manifest" href="/manifest.json" />
         <RouterHead />
         <Insights

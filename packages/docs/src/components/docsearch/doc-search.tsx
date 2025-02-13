@@ -7,12 +7,13 @@ import {
   createContextId,
   useContextProvider,
   type Signal,
+  $,
+  sync$,
 } from '@builder.io/qwik';
 import type { DocSearchHit, InternalDocSearchHit } from './types';
 import { type ButtonTranslations, DocSearchButton } from './doc-search-button';
 import { DocSearchModal, type ModalTranslations } from './doc-search-modal';
 import styles from './doc-search.css?inline';
-import type { QwikKeyboardEvent } from '../../../../../packages/qwik/src/core/render/jsx/types/jsx-qwik-events';
 
 export type DocSearchTranslations = Partial<{
   button: ButtonTranslations;
@@ -44,7 +45,7 @@ export interface DocSearchProps {
   translations?: DocSearchTranslations;
 }
 
-export function isEditingContent(event: QwikKeyboardEvent<HTMLElement>): boolean {
+export function isEditingContent(event: KeyboardEvent): boolean {
   const { isContentEditable, tagName } = event.target as HTMLElement;
 
   return isContentEditable || tagName === 'INPUT' || tagName === 'SELECT' || tagName === 'TEXTAREA';
@@ -71,44 +72,49 @@ export const DocSearch = component$((props: DocSearchProps) => {
     snippetLength: 10,
   });
 
-  const searchButtonRef = useSignal();
+  const searchButtonRef = useSignal<Element>();
 
   return (
     <div
       class={{ docsearch: true, 'ai-result-open': aiResultOpen.value }}
-      window:onKeyDown$={(event) => {
-        function open() {
-          // We check that no other DocSearch modal is showing before opening
-          // another one.
-          if (!document.body.classList.contains('DocSearch--active')) {
-            state.isOpen = true;
+      window:onKeyDown$={[
+        sync$((event: KeyboardEvent) => {
+          if (event.key === 'k' && (event.metaKey || event.ctrlKey)) {
+            event.preventDefault();
           }
-        }
-        if (
-          (event.key === 'Escape' && state.isOpen) ||
-          // The `Cmd+K` shortcut both opens and closes the modal.
-          (event.key === 'k' && (event.metaKey || event.ctrlKey)) ||
-          // The `/` shortcut opens but doesn't close the modal because it's
-          // a character.
-          (!isEditingContent(event) && event.key === '/' && !state.isOpen)
-        ) {
-          // FIXME: not able to prevent
-          // event.preventDefault();
+        }),
+        $((event) => {
+          function open() {
+            // We check that no other DocSearch modal is showing before opening
+            // another one.
+            if (!document.body.classList.contains('DocSearch--active')) {
+              state.isOpen = true;
+            }
+          }
+          if (
+            (event.key === 'Escape' && state.isOpen) ||
+            // The `Cmd+K` shortcut both opens and closes the modal.
+            (event.key === 'k' && (event.metaKey || event.ctrlKey)) ||
+            // The `/` shortcut opens but doesn't close the modal because it's
+            // a character.
+            (!isEditingContent(event) && event.key === '/' && !state.isOpen)
+          ) {
+            event.preventDefault();
+            if (state.isOpen) {
+              state.isOpen = false;
+            } else if (!document.body.classList.contains('DocSearch--active')) {
+              open();
+            }
+          }
 
-          if (state.isOpen) {
-            state.isOpen = false;
-          } else if (!document.body.classList.contains('DocSearch--active')) {
-            open();
+          if (searchButtonRef && searchButtonRef.value === document.activeElement) {
+            if (/[a-zA-Z0-9]/.test(String.fromCharCode(event.keyCode))) {
+              state.isOpen = true;
+              state.initialQuery = event.key;
+            }
           }
-        }
-
-        if (searchButtonRef && searchButtonRef.value === document.activeElement) {
-          if (/[a-zA-Z0-9]/.test(String.fromCharCode(event.keyCode))) {
-            state.isOpen = true;
-            state.initialQuery = event.key;
-          }
-        }
-      }}
+        }),
+      ]}
     >
       <DocSearchButton
         ref={searchButtonRef}

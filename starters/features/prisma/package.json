@@ -5,7 +5,7 @@
     "priority": -10,
     "viteConfig": {},
     "docs": [
-      "https://qwik.builder.io/integrations/integration/prisma/",
+      "https://qwik.dev/integrations/prisma/",
       "https://www.prisma.io/docs/concepts/overview/what-is-prisma"
     ],
     "postInstall": "prisma migrate dev --name initial",
@@ -20,11 +20,12 @@
         " Check out the Prisma docs for more info:",
         "   - https://www.prisma.io/docs/getting-started"
       ]
-    }
+    },
+    "alwaysInRoot": []
   },
   "devDependencies": {
-    "@prisma/client": "4.16.1",
-    "prisma": "^4.16.1"
+    "@prisma/client": "5.3.1",
+    "prisma": "^5.3.1"
   },
   "scripts": {
     "postinstall": "prisma generate",

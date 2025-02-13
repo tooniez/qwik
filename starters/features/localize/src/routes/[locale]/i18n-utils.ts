@@ -1,6 +1,6 @@
 import "@angular/localize/init";
 import { loadTranslations } from "@angular/localize";
-import { getLocale, withLocale } from "@builder.io/qwik";
+import { $, getLocale, useOnDocument, withLocale } from "@builder.io/qwik";
 import type { RenderOptions } from "@builder.io/qwik/server";
 
 // You must declare all your locales here
@@ -74,19 +74,18 @@ export function extractLang(locale: string): string {
  */
 export function extractBase({ serverData }: RenderOptions): string {
   if (import.meta.env.DEV) {
-    return "/build";
+    return `${import.meta.env.BASE_URL}build`;
   } else {
-    return "/build/" + serverData!.locale;
+    return `${import.meta.env.BASE_URL}build/` + serverData!.locale;
   }
 }
 
 export function useI18n() {
-  // Runtime translation is used during development only.
   if (import.meta.env.DEV) {
-    return initTranslations;
+    // During development only, load all translations in memory when the app starts on the client.
+    // eslint-disable-next-line
+    useOnDocument("qinit", $(initTranslations));
   }
-  // Otherwise, will return a noop
-  return () => {};
 }
 
 // We always need the translations on the server

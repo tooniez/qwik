@@ -1,6 +1,4 @@
-/**
- * @public
- */
+/** @public */
 export const untypedAppUrl = function appUrl(
   route: string,
   params?: Record<string, string>,
@@ -15,8 +13,22 @@ export const untypedAppUrl = function appUrl(
       const value = params ? params[paramsPrefix + key] || params[key] : '';
       path[i] = isSpread ? value : encodeURIComponent(value);
     }
+    if (segment.startsWith('(') && segment.endsWith(')')) {
+      path.splice(i, 1);
+    }
   }
-  return path.join('/');
+  let url = path.join('/');
+  let baseURL = import.meta.env.BASE_URL;
+  if (baseURL) {
+    if (!baseURL.endsWith('/')) {
+      baseURL += '/';
+    }
+    while (url.startsWith('/')) {
+      url = url.substring(1);
+    }
+    url = baseURL + url;
+  }
+  return url;
 };
 
 /**
