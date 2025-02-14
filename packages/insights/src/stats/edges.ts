@@ -3,21 +3,12 @@ import { vectorSum2 } from './vector';
 
 export interface Symbol {
   name: string;
-  /**
-   * Map of dependent symbols sorted by probability of dependency.
-   */
+  /** Map of dependent symbols sorted by probability of dependency. */
   children: Edge[];
-  /**
-   *
-   */
   count: number;
-  /**
-   * Unmodified name of the symbol.
-   */
+  /** Unmodified name of the symbol. */
   fullName: string | null;
-  /**
-   * File source of the symbol.
-   */
+  /** File source of the symbol. */
   fileSrc: string | null;
   /**
    * Depth of the symbol in the graph following the shortest path.
@@ -212,11 +203,11 @@ export interface Bundle {
 export function computeBundles(symbolVectors: SymbolVectors): Bundle[] {
   const bundles: Bundle[] = [];
   const dbscan = new DBSCAN();
-  // We want to set the distance so that it is just bellow (90%) the distance between two unrelated symbols.
-  const maxDistance = 0.9 * Math.sqrt(Math.pow(1, 2) + Math.pow(1, 2));
+  // We want to set the distance so that it is just below (90%) the distance between two unrelated symbols.
+  const maxDistance = 0.95 * Math.sqrt(Math.pow(1, 2) + Math.pow(1, 2));
   const clusters = dbscan.run(symbolVectors.vectors, maxDistance, 1);
   clusters.forEach((cluster) => {
-    const symbols = cluster.map((id) => symbolVectors.symbols[id]);
+    const symbols = cluster.map((id) => symbolVectors.symbols[id]).filter(Boolean);
     const symbolNames = symbols.map((s) => s.name);
     symbolNames.sort();
     bundles.push({
@@ -224,6 +215,7 @@ export function computeBundles(symbolVectors: SymbolVectors): Bundle[] {
       symbols,
     });
   });
+  bundles.sort((b1, b2) => b2.symbols.length - b1.symbols.length);
   return bundles;
 }
 

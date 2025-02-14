@@ -4,9 +4,7 @@ import { type BuildConfig, type PackageJSON } from './util';
 import { join } from 'node:path';
 import { writePackageJson } from './package-json';
 
-/**
- * Builds @builder.io/testing
- */
+/** Builds @builder.io/testing */
 export async function submoduleTesting(config: BuildConfig) {
   const submodule = 'testing';
 
@@ -73,6 +71,7 @@ async function generateTestingPackageJson(config: BuildConfig) {
     types: 'index.d.ts',
     private: true,
     type: 'module',
+    sideEffects: true,
   };
   const testingDistDir = join(config.distQwikPkgDir, 'testing');
   await writePackageJson(testingDistDir, pkg);

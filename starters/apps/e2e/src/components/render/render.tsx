@@ -1,7 +1,5 @@
 import {
   component$,
-  type JSXNode,
-  type PropFunction,
   useSignal,
   useStore,
   useStylesScoped$,
@@ -12,24 +10,30 @@ import {
   SkipRender,
   SSRRaw,
   HTMLFragment,
-  type QwikIntrinsicElements,
+  type PropsOf,
   Slot,
+  type QRL,
+  type JSXOutput,
 } from "@builder.io/qwik";
 import { delay } from "../streaming/demo";
-import { isServer } from "@builder.io/qwik/build";
+import { isServer } from "@builder.io/qwik";
 
 export const Render = component$(() => {
   const rerender = useSignal(0);
   return (
     <>
-      <button id="rerender" onClick$={() => rerender.value++}>
+      <button
+        id="rerender"
+        data-v={rerender.value}
+        onClick$={() => rerender.value++}
+      >
         Rerender
       </button>
-      <RenderChildren key={rerender.value} />
+      <RenderChildren v={rerender.value} key={rerender.value} />
     </>
   );
 });
-export const RenderChildren = component$(() => {
+export const RenderChildren = component$<{ v: number }>(({ v }) => {
   const parent = {
     counter: {
       count: 0,
@@ -42,6 +46,7 @@ export const RenderChildren = component$(() => {
   const state = useStore(parent, { deep: true });
   return (
     <>
+      <div id="rerenderCount">Render {v}</div>
       <button
         id="increment"
         onClick$={() => {
@@ -59,27 +64,23 @@ export const RenderChildren = component$(() => {
       <Issue2889 />
       <Issue3116 />
       <CounterToggle />
-
       <PropsDestructuring
         message="Hello"
         count={state.count}
         id="props-destructuring"
         aria-hidden="true"
       />
-
       <PropsDestructuringNo
         count={state.count}
         id="props-destructuring-no"
         aria-hidden="true"
       />
-
       <PropsDestructuring
         message="Count"
         count={state.count}
         id="props-destructuring-count"
         aria-count={state.count}
       />
-
       <IssueReorder />
       <Issue2414 />
       <Issue3178 />
@@ -103,6 +104,8 @@ export const RenderChildren = component$(() => {
       <Issue4292 />
       <Issue4386 />
       <Issue4455 />
+      <Issue5266 />
+      <DynamicButton id="dynamic-button" />;
     </>
   );
 });
@@ -370,7 +373,7 @@ export const Issue2889 = component$(() => {
 type Product = string;
 
 export type ProductRelationProps = {
-  render$: PropFunction<(products: Product[]) => JSXNode>;
+  render$: QRL<(products: Product[]) => JSXOutput>;
 };
 
 export const ProductRelations = component$((props: ProductRelationProps) => {
@@ -459,7 +462,7 @@ const Issue2414 = component$(() => {
               <th
                 key={c}
                 id={`issue-2414-${c}`}
-                onClick$={(e) => {
+                onClick$={() => {
                   sort.value = c;
                 }}
               >
@@ -830,7 +833,7 @@ export const HTMLFragmentTest = component$(() => {
   );
 });
 
-type A = QwikIntrinsicElements["button"];
+type A = PropsOf<"button">;
 
 export interface TestAProps extends A {}
 
@@ -924,3 +927,46 @@ export const Issue4455 = component$(() => {
     </>
   );
 });
+
+export const DynamicComponent = component$<{ b?: boolean; v: string }>(
+  ({ b, v }) => {
+    // Make the tag dynamic
+    const Tag = b ? "button" : "div";
+    return (
+      <Tag id="issue-5266-tag" data-v={v}>
+        hello
+      </Tag>
+    );
+  },
+);
+export const Issue5266 = component$(() => {
+  const show = useSignal(false);
+  const state = useSignal("foo");
+  return (
+    <div>
+      <button id="issue-5266-render" onClick$={() => (show.value = true)} />
+      <button id="issue-5266-button" onClick$={() => (state.value = "bar")}>
+        toggle
+      </button>
+      {show.value && <DynamicComponent v={state.value} />}
+    </div>
+  );
+});
+
+// needs to be a variable outside component scope to trigger the bug
+const buttonStyle = "btn";
+export const DynamicButton = component$<any>(
+  ({ isWhite, href, onClick$, id }: any) => {
+    const ComponentName = href ? "a" : "button";
+    return (
+      <ComponentName
+        id={id}
+        class={[buttonStyle, { white: isWhite }]}
+        href={href}
+        onClick$={onClick$}
+      >
+        <Slot />
+      </ComponentName>
+    );
+  },
+);

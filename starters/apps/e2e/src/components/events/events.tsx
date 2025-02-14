@@ -1,7 +1,7 @@
 import {
   component$,
   useStore,
-  type PropFunction,
+  type QRL,
   useSignal,
   useOnWindow,
   $,
@@ -12,6 +12,7 @@ export const Events = component$(() => {
     countTransparent: 0,
     countWrapped: 0,
     countAnchor: 0,
+    propagationStoppedCount: 0,
   });
 
   return (
@@ -47,19 +48,37 @@ export const Events = component$(() => {
             Should count
           </a>
         </div>
+        <div
+          onClick$={() => {
+            store.propagationStoppedCount++;
+            throw new Error("event was not stopped");
+          }}
+        >
+          <button
+            stoppropagation:click
+            id="stop-propagation"
+            onClick$={(ev) => {
+              store.propagationStoppedCount++;
+            }}
+          >
+            Should stop propagation{" "}
+          </button>
+        </div>
       </div>
-
       <p id="count-transparent">countTransparent: {store.countTransparent}</p>
       <p id="count-wrapped">countWrapped: {store.countWrapped}</p>
       <p id="count-anchor">countAnchor: {store.countAnchor}</p>
+      <p id="count-propagation">
+        countPropagationStopped: {store.propagationStoppedCount}
+      </p>
       <Issue3948 />
     </div>
   );
 });
 
 interface ButtonProps {
-  onTransparentClick$?: PropFunction<(ev: Event) => any>;
-  onWrappedClick$?: PropFunction<(nu: number) => void>;
+  onTransparentClick$?: QRL<(ev: Event) => any>;
+  onWrappedClick$?: QRL<(nu: number) => void>;
 }
 
 export const Buttons = component$((props: ButtonProps) => {

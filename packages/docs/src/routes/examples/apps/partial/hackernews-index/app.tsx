@@ -1,5 +1,5 @@
 import { component$, useTask$, useStore, useStyles$ } from '@builder.io/qwik';
-import { isServer } from '@builder.io/qwik/build';
+import { isServer } from '@builder.io/qwik';
 import HackerNewsCSS from './hacker-news.css?inline';
 
 export const HackerNews = component$(() => {
@@ -14,10 +14,10 @@ export const HackerNews = component$(() => {
   });
 
   return (
-    <>
+    <div class="hacker-news">
       <Nav />
       <Stories data={store.data} />
-    </>
+    </div>
   );
 });
 
@@ -41,12 +41,7 @@ export const Nav = component$(() => {
           <a href="/?type=job">
             <strong>Jobs</strong>
           </a>
-          <a
-            class="github"
-            href="http://github.com/builderio/qwik"
-            target="_blank"
-            rel="noreferrer"
-          >
+          <a class="github" href="http://github.com/QwikDev/qwik" target="_blank" rel="noreferrer">
             Built with Qwik
           </a>
         </nav>
@@ -55,7 +50,7 @@ export const Nav = component$(() => {
   );
 });
 
-export const Stories = component$((props: { data: any }) => {
+export const Stories = component$<{ data: any }>((props) => {
   const page = 1;
   const type = 'list';
   const stories = props.data;
@@ -95,7 +90,7 @@ export const Stories = component$((props: { data: any }) => {
   );
 });
 
-export const StoryPreview = component$((props: { story: IStory }) => {
+export const StoryPreview = component$<{ story: IStory }>((props) => {
   return (
     <li class="news-item">
       <span class="score">{props.story.points}</span>

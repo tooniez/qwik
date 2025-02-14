@@ -23,7 +23,7 @@ export const jsxNoScriptUrl = {
     docs: {
       recommended: 'error',
       description: 'Disallow javascript: URLs.',
-      url: 'https://qwik.builder.io/docs/advanced/eslint/#jsx-no-script-url',
+      url: 'https://qwik.dev/docs/advanced/eslint/#jsx-no-script-url',
     },
     schema: [],
     messages: {
@@ -31,12 +31,13 @@ export const jsxNoScriptUrl = {
     },
   },
   create(context) {
+    const sourceCode = context.sourceCode ?? context.getSourceCode();
     return {
       JSXAttribute(node) {
         if (node.name.type === 'JSXIdentifier' && node.value) {
           const link = getStaticValue(
             node.value.type === 'JSXExpressionContainer' ? node.value.expression : node.value,
-            context.getScope()
+            sourceCode.getScope ? sourceCode.getScope(node) : context.getScope()
           );
           if (link && typeof link.value === 'string' && isJavaScriptProtocol.test(link.value)) {
             context.report({

@@ -1,45 +1,32 @@
-/**
- * @public
- */
+/** @public */
 export interface Optimizer {
-  /**
-   * Transforms the input code string, does not access the file system.
-   */
+  /** Transforms the input code string, does not access the file system. */
   transformModules(opts: TransformModulesOptions): Promise<TransformOutput>;
 
-  /**
-   * Transforms the input code string, does not access the file system.
-   */
+  /** Transforms the input code string, does not access the file system. */
   transformModulesSync(opts: TransformModulesOptions): TransformOutput;
 
-  /**
-   * Transforms the directory from the file system.
-   */
+  /** Transforms the directory from the file system. */
   transformFs(opts: TransformFsOptions): Promise<TransformOutput>;
 
-  /**
-   * Transforms the directory from the file system.
-   */
+  /** Transforms the directory from the file system. */
   transformFsSync(opts: TransformFsOptions): TransformOutput;
 
-  /**
-   * Optimizer system use. This can be updated with a custom file system.
-   */
+  /** Optimizer system use. This can be updated with a custom file system. */
   sys: OptimizerSystem;
 }
 
-/**
- * @public
- */
+/** @public */
 export interface OptimizerOptions {
   sys?: OptimizerSystem;
   binding?: any;
+  /** Inline the global styles if they're smaller than this */
   inlineStylesUpToBytes?: number;
+  /** Enable sourcemaps */
+  sourcemap?: boolean;
 }
 
-/**
- * @public
- */
+/** @public */
 export interface OptimizerSystem {
   cwd: () => string;
   env: SystemEnvironment;
@@ -50,26 +37,18 @@ export interface OptimizerSystem {
   path: Path;
 }
 
-/**
- * @public
- */
-export type SystemEnvironment = 'node' | 'deno' | 'webworker' | 'browsermain' | 'unknown';
+/** @public */
+export type SystemEnvironment = 'node' | 'deno' | 'bun' | 'webworker' | 'browsermain' | 'unknown';
 
 // OPTIONS ***************
 
-/**
- * @public
- */
+/** @public */
 export type SourceMapsOption = 'external' | 'inline' | undefined | null;
 
-/**
- * @public
- */
+/** @public */
 export type TranspileOption = boolean | undefined | null;
 
-/**
- * @public
- */
+/** @public */
 export interface TransformOptions {
   srcDir: string;
   rootDir?: string;
@@ -89,35 +68,28 @@ export interface TransformOptions {
   isServer?: boolean;
 }
 
-/**
- * @public
- */
+/** @public */
 export interface TransformModulesOptions extends TransformOptions {
   input: TransformModuleInput[];
 }
 
-/**
- * @public
- */
+/** @public */
 export interface TransformFsOptions extends TransformOptions {
   vendorRoots: string[];
 }
 
 // OPTION INPUTS ***************
 
-/**
- * @public
- */
+/** @public */
 export interface TransformModuleInput {
   path: string;
+  devPath?: string;
   code: string;
 }
 
 // RESULT ***************
 
-/**
- * @public
- */
+/** @public */
 export interface TransformOutput {
   modules: TransformModule[];
   diagnostics: Diagnostic[];
@@ -125,10 +97,8 @@ export interface TransformOutput {
   isJsx: boolean;
 }
 
-/**
- * @public
- */
-export interface HookAnalysis {
+/** @public */
+export interface SegmentAnalysis {
   origin: string;
   name: string;
   entry: string | null;
@@ -145,22 +115,19 @@ export interface HookAnalysis {
 
 // RESULT OUTPUT ***************
 
-/**
- * @public
- */
+/** @public */
 export interface TransformModule {
   path: string;
   isEntry: boolean;
   code: string;
   map: string | null;
-  hook: HookAnalysis | null;
+  segment: SegmentAnalysis | null;
+  origPath: string | null;
 }
 
 // DIAGNOSTICS ***************
 
-/**
- * @public
- */
+/** @public */
 export interface Diagnostic {
   scope: string;
   category: DiagnosticCategory;
@@ -171,9 +138,7 @@ export interface Diagnostic {
   suggestions: string[] | null;
 }
 
-/**
- * @public
- */
+/** @public */
 export interface SourceLocation {
   hi: number;
   lo: number;
@@ -183,88 +148,82 @@ export interface SourceLocation {
   endCol: number;
 }
 
-/**
- * @public
- */
+/** @public */
 export type DiagnosticCategory = 'error' | 'warning' | 'sourceError';
 
 // ENTRY STRATEGY ***************
 
-/**
- * @public
- */
+/** @public */
 export type EntryStrategy =
   | InlineEntryStrategy
   | HoistEntryStrategy
   | SingleEntryStrategy
   | HookEntryStrategy
+  | SegmentEntryStrategy
   | ComponentEntryStrategy
   | SmartEntryStrategy;
 
-/**
- * @public
- */
+/** @public */
 export type MinifyMode = 'simplify' | 'none';
 
-/**
- * @public
- */
+/** @public */
 export type EmitMode = 'dev' | 'prod' | 'lib';
 
-/**
- * @public
- */
+/** @public */
 export interface InlineEntryStrategy {
   type: 'inline';
 }
 
-/**
- * @public
- */
+/** @public */
 export interface HoistEntryStrategy {
   type: 'hoist';
 }
 
-/**
- * @public
- */
+/** @deprecated Use SegmentStrategy instead */
 export interface HookEntryStrategy {
   type: 'hook';
   manual?: Record<string, string>;
 }
 
-/**
- * @public
- */
+/** @public */
+export interface SegmentEntryStrategy {
+  type: 'segment';
+  manual?: Record<string, string>;
+}
+
+/** @public */
 export interface SingleEntryStrategy {
   type: 'single';
   manual?: Record<string, string>;
 }
 
-/**
- * @public
- */
+/** @public */
 export interface ComponentEntryStrategy {
   type: 'component';
   manual?: Record<string, string>;
 }
 
-/**
- * @public
- */
+/** @public */
 export interface SmartEntryStrategy {
   type: 'smart';
   manual?: Record<string, string>;
 }
 
 /**
+ * The metadata of the build. One of its uses is storing where QRL symbols are located.
+ *
  * @public
  */
 export interface QwikManifest {
+  /** Content hash of the manifest, if this changes, the code changed */
   manifestHash: string;
+  /** QRL symbols */
   symbols: { [symbolName: string]: QwikSymbol };
+  /** Where QRLs are located */
   mapping: { [symbolName: string]: string };
+  /** All code bundles, used to know the import graph */
   bundles: { [fileName: string]: QwikBundle };
+  /** CSS etc to inject in the document head */
   injections?: GlobalInjections[];
   version: string;
   options?: {
@@ -276,21 +235,26 @@ export interface QwikManifest {
 }
 
 /**
+ * Bundle graph.
+ *
+ * Format: [ 'bundle-a.js', 3, 5 // Depends on 'bundle-b.js' and 'bundle-c.js' 'bundle-b.js', 5, //
+ * Depends on 'bundle-c.js' 'bundle-c.js', ]
+ *
  * @public
  */
+export type QwikBundleGraph = Array<string | number>;
+
+/** @public */
 export type SymbolMapper = Record<string, readonly [symbol: string, chunk: string]>;
 
-/**
- * @public
- */
+/** @public */
 export type SymbolMapperFn = (
   symbolName: string,
-  mapper: SymbolMapper | undefined
+  mapper: SymbolMapper | undefined,
+  parent?: string
 ) => readonly [symbol: string, chunk: string] | undefined;
 
-/**
- * @public
- */
+/** @public */
 export interface QwikSymbol {
   origin: string;
   displayName: string;
@@ -303,41 +267,27 @@ export interface QwikSymbol {
   loc: [number, number];
 }
 
-/**
- * @public
- */
+/** @public */
 export interface QwikBundle {
   size: number;
+  /** Not precise, but an indication of whether this import may be a task */
+  isTask?: boolean;
   symbols?: string[];
   imports?: string[];
   dynamicImports?: string[];
   origins?: string[];
 }
 
-/**
- * @public
- */
+/** @public */
 export interface GlobalInjections {
   tag: string;
   attributes?: { [key: string]: string };
   location: 'head' | 'body';
 }
 
-export interface GeneratedOutputBundle {
-  fileName: string;
-  modules: {
-    [id: string]: any;
-  };
-  imports: string[];
-  dynamicImports: string[];
-  size: number;
-}
-
 // PATH UTIL  ***************
 
-/**
- * @public
- */
+/** @public */
 export interface Path {
   resolve(...paths: string[]): string;
   normalize(path: string): string;
@@ -367,10 +317,15 @@ export interface Path {
   readonly posix: Path;
 }
 
-/**
- * @public
- */
+/** @public */
 export interface ResolvedManifest {
   mapper: SymbolMapper;
   manifest: QwikManifest;
+}
+
+/** @public */
+export interface InsightManifest {
+  type: 'smart';
+  manual: Record<string, string>;
+  prefetch: { route: string; symbols: string[] }[];
 }

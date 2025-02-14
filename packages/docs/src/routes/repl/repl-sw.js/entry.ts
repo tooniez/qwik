@@ -4,6 +4,7 @@ import { requestHandler } from '../../../repl/worker/repl-request-handler';
 
 /**
  * REPL Service Worker
+ *
  * /repl/repl-sw.js
  */
 
@@ -33,8 +34,8 @@ export interface ReplGlobalApi {
 
 export interface QwikWorkerGlobal extends ReplGlobalApi {
   onmessage: (ev: MessageEvent) => void;
-  onfetch: (ev: Event) => void;
-  oninstall: (ev: any) => void;
+  onfetch: (ev: FetchEvent) => void;
+  oninstall: (ev: ExtendableEvent) => void;
   onactivate: () => void;
   skipWaiting: () => void;
   clients: {

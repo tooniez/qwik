@@ -12,7 +12,7 @@ import type { DocSearchHit } from './types';
 import { identity } from './utils';
 import { clearStalled, setStalled } from './utils/stalledControl';
 import { AIButton } from './result';
-import { isBrowser } from '@builder.io/qwik/build';
+import { isBrowser } from '@builder.io/qwik';
 
 export type ModalTranslations = Partial<{
   searchBox: SearchBoxTranslations;
@@ -162,9 +162,7 @@ export const DocSearchModal = component$(
           'DocSearch-Container',
           state.status === 'stalled' && 'DocSearch-Container--Stalled',
           state.status === 'error' && 'DocSearch-Container--Errored',
-        ]
-          .filter(Boolean)
-          .join(' ')}
+        ]}
         role="button"
         tabIndex={0}
         onMouseDown$={(event) => {
